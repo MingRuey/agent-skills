@@ -1,0 +1,38 @@
+services:
+  api:
+    ports: !override
+      - "127.0.0.1:${PORT}:${PORT}"
+    volumes:
+      - type: bind
+        source: ./librechat.yaml
+        target: /app/librechat.yaml
+
+  bootstrap-user:
+    image: python:3.12-slim
+    depends_on:
+      - mongodb
+    env_file:
+      - .env
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/LibreChat
+    volumes:
+      - ../bin/bootstrap-user.py:/bootstrap.py:ro
+    command: ["sh", "-c", "pip install --quiet bcrypt pymongo && python /bootstrap.py"]
+    restart: "no"
+
+  syncer:
+    image: python:3.12-slim
+    depends_on:
+      api:
+        condition: service_started
+      bootstrap-user:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      - LIBRECHAT_URL=http://api:${PORT}
+    volumes:
+      - ../agents:/agents:ro
+      - ../bin/sync.py:/sync.py:ro
+    command: ["sh", "-c", "pip install --quiet pyyaml && python /sync.py"]
+    restart: "no"
