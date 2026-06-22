@@ -576,10 +576,17 @@ endpoints:
 # the schema default, and `enforce: false` (default) means users can still pick
 # other endpoints/models via the picker.
 modelSpecs:
+  prioritize: true
   list:
+    - name: "Claude + Tavily"
+      label: "My Agents"
+      default: true
+      preset:
+        endpoint: "agents"
+        agent_id: "agent_ytX-hcgcyAwWwVWN06Iu2"
     - name: "claude-sonnet-default"
       label: "Claude Sonnet 4.7"
-      default: true
+      default: false
       preset:
         endpoint: "anthropic"
         model: "claude-sonnet-4-7"
