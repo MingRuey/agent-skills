@@ -69,12 +69,15 @@ services:
         condition: service_started
       bootstrap-user:
         condition: service_completed_successfully
+      mcp-memory:
+        condition: service_started
     env_file:
       - .env
     environment:
       - LIBRECHAT_URL=http://api:${PORT}
     volumes:
       - ../agents:/agents:ro
+      - ../skills:/skills:ro
       - ../bin/sync.py:/sync.py:ro
     command: ["sh", "-c", "pip install --quiet pyyaml && python /sync.py"]
     restart: "no"
