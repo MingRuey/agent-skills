@@ -2,10 +2,44 @@ services:
   api:
     ports: !override
       - "127.0.0.1:${PORT}:${PORT}"
+    # Start after the memory server so LibreChat's MCP init can connect to it
+    depends_on:
+      - mcp-memory
     volumes:
       - type: bind
         source: ./librechat.yaml
         target: /app/librechat.yaml
+
+  # Hybrid memory: local sqlite-vec for reads, background sync to Cloudflare (D1 + Vectorize).
+  # LibreChat reaches it at http://mcp-memory:8000/mcp; host-side Claude Code at 127.0.0.1:2068.
+  mcp-memory:
+    # Pinned: ghcr.io's copy stopped at 10.70.3, which has the open-DCR token hole
+    # (GHSA-6mvm-q4j3-27qg, fixed 11.11.0). Docker Hub has current releases.
+    image: docker.io/doobidoo/mcp-memory-service:12.4.0
+    container_name: mcp-memory
+    ports:
+      - "127.0.0.1:${MCP_MEMORY_PORT:-2068}:8000"
+    environment:
+      - MCP_MODE=http
+      - MCP_HTTP_HOST=0.0.0.0
+      - MCP_HTTP_PORT=8000
+      - MCP_API_KEY=${MCP_MEMORY_API_KEY}
+      - MCP_MEMORY_STORAGE_BACKEND=hybrid
+      - MCP_MEMORY_SQLITE_PATH=/app/data/sqlite_vec.db
+      - MCP_MEMORY_BACKUPS_PATH=/app/data/backups
+      - MCP_HYBRID_SYNC_OWNER=http
+      # Multilingual embeddings; each side embeds independently, so dims needn't match.
+      # The Mac instance must use the same local model.
+      - MCP_EMBEDDING_MODEL=paraphrase-multilingual-MiniLM-L12-v2
+      - CLOUDFLARE_EMBEDDING_MODEL=@cf/baai/bge-m3
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+      - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID}
+      - CLOUDFLARE_D1_DATABASE_ID=${CLOUDFLARE_D1_DATABASE_ID}
+      - CLOUDFLARE_VECTORIZE_INDEX=${CLOUDFLARE_VECTORIZE_INDEX:-mcp-memory-index}
+    volumes:
+      - mcp-memory-data:/app/data
+      - mcp-memory-models:/root/.cache
+    restart: unless-stopped
 
   bootstrap-user:
     image: python:3.12-slim
@@ -36,3 +70,7 @@ services:
       - ../bin/sync.py:/sync.py:ro
     command: ["sh", "-c", "pip install --quiet pyyaml && python /sync.py"]
     restart: "no"
+
+volumes:
+  mcp-memory-data:
+  mcp-memory-models:
