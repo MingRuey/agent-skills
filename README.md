@@ -4,7 +4,7 @@ Ray's personal agent setup: LibreChat (company Anthropic key), Claude Code (Mac 
 
 ```
 agents/AGENT.md     shared rules (memory) → Claude Code CLAUDE.md, every LibreChat agent, claude.ai profile
-agents/<name>/      LibreChat agents (currently: claude-work)
+agents/<name>/      LibreChat agents (currently: ai-kun)
 skills/<name>/      shared skills (guided-tutoring, karpathy-guidelines)
 bin/sync.py         pushes agents + skills into LibreChat
 LibreChat/          upstream LibreChat + our docker-compose.override.yml, librechat.yaml, .env
@@ -48,7 +48,7 @@ Set up per the [official Docker guide](https://www.librechat.ai/docs/local/docke
 
 ## Agents and skills
 
-- **Agent** = a different API key / model / toolset. One today: `claude-work` (company key, Opus, web search). A personal one would need a personal Anthropic API key
+- **Agent** = a different API key / model / toolset. One today: **Ai-kun** (`agents/ai-kun`: company key, Opus, web search). A personal one would need a personal Anthropic API key
 - **Skill** = a procedure loaded when relevant: `guided-tutoring`, `karpathy-guidelines` (verbatim from multica-ai/andrej-karpathy-skills, MIT)
 - **Memory** = facts and preferences about Ray, never files
 
@@ -57,10 +57,10 @@ Set up per the [official Docker guide](https://www.librechat.ai/docs/local/docke
 <details><summary>Sync details</summary>
 
 - `bootstrap-user` inserts the LibreChat account `syncer` logs in with (`LIBRECHAT_EMAIL` / `LIBRECHAT_PASSWORD` in `.env`); registration is closed otherwise
-- Agents and skills are matched by name: created or updated, never duplicated
+- Agents and skills are matched by name: created or updated, never duplicated. `id:` in an agent's frontmatter pins it to an existing agent instead, so it can be renamed; `avatar:` uploads that image file from the agent folder
 - Removing one from the repo doesn't delete it in LibreChat; to delete everything the repo doesn't define: `docker compose run --rm -e SYNC_PRUNE=1 syncer`
 - LibreChat silently drops MCP tools it can't verify; `sync.py` exits non-zero if an agent lost its memory tools — rerun once the memory server is up
-- Default chat = `claude-work` model spec in `librechat.yaml`; its `agent_id` comes from the syncer log (`+ agent Claude (work) (agent_…)`) on first creation, then `docker compose restart api`
+- Default chat = `ai-kun` model spec in `librechat.yaml`, pointing at the same agent ID as `id:` in `agents/ai-kun/AGENT.md`
 - Claude Code skills: `for d in ~/code/agent-skills/skills/*/; do ln -sfn "$d" ~/.claude-personal/skills/; done`
 
 </details>

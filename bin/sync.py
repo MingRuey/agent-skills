@@ -180,7 +180,7 @@ def upsert_agent(token, agent_dir, skill_ids, shared_text, shared_skill_ids):
     tools = list(fm.get("tools", []) or [])
     if use_shared:
         if shared_text:
-            body = f"{shared_text}\n\n{body}"
+            body = f"{shared_text}\n\n{body}" if body.strip() else shared_text
         tools += [t for t in SHARED_TOOLS if t not in tools]
 
     payload = {
@@ -205,7 +205,13 @@ def upsert_agent(token, agent_dir, skill_ids, shared_text, shared_skill_ids):
         payload["skills_enabled"] = fm.get("skills_enabled", True)
 
     items = list_remote(token, "/api/agents", ["data", "agents"])
-    existing = next((a for a in items if a.get("name") == name), None)
+    # `id:` pins the agent so it can be renamed without creating a new one
+    pinned = fm.get("id")
+    existing = next(
+        (a for a in items if (a.get("id") == pinned if pinned else a.get("name") == name)), None
+    )
+    if pinned and existing is None:
+        sys.exit(f"[sync] agent {name}: id {pinned} not found in LibreChat")
 
     def _id_of(obj):
         if isinstance(obj, dict):
@@ -224,6 +230,10 @@ def upsert_agent(token, agent_dir, skill_ids, shared_text, shared_skill_ids):
             sys.exit(f"[sync] update agent {name} failed ({status}): {resp!r}")
         print(f"[sync]   ~ agent {name} ({agent_id})", flush=True)
 
+    avatar = fm.get("avatar")
+    if avatar:
+        upload_avatar(token, _id_of(resp) if existing is None else agent_id, agent_dir / avatar)
+
     if not use_shared:
         return name, []
     saved = resp.get("tools") if isinstance(resp, dict) else None
@@ -235,6 +245,32 @@ def upsert_agent(token, agent_dir, skill_ids, shared_text, shared_skill_ids):
         print(f"[sync]   ! agent {name}: LibreChat dropped {missing} "
               "(is the memory server connected, and may this user use MCP?)", flush=True)
     return name, missing
+
+
+def upload_avatar(token, agent_id, path):
+    """Multipart upload to LibreChat's agent avatar endpoint (field name `file`)."""
+    boundary = "----sync" + os.urandom(8).hex()
+    mime = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}
+    body = (
+        f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; filename=\"{path.name}\"\r\n"
+        f"Content-Type: {mime.get(path.suffix.lower(), 'application/octet-stream')}\r\n\r\n"
+    ).encode() + path.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+    req = urllib.request.Request(
+        f"{BASE_URL}/api/files/images/agents/{agent_id}/avatar",
+        method="POST",
+        data=body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": f"multipart/form-data; boundary={boundary}",
+            "User-Agent": BROWSER_UA,
+        },
+    )
+    try:
+        with urllib.request.urlopen(req) as r:
+            status = r.status
+    except urllib.error.HTTPError as e:
+        status = e.code
+    print(f"[sync]   {'~' if status in (200, 201) else '!'} avatar {path.name} ({status})", flush=True)
 
 
 def prune(token, kind, path, keys, keep, id_keys):
