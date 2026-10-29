@@ -192,6 +192,8 @@ def upsert_agent(token, agent_dir, skill_ids, shared_text, shared_skill_ids):
         "model_parameters": fm.get("model_parameters", {}),
         "tools": tools,
     }
+    if "subagents" in fm:
+        payload["subagents"] = fm["subagents"]
 
     skill_refs = fm.get("skills", []) or []
     unknown = [s for s in skill_refs if s not in skill_ids]

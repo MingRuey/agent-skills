@@ -68,6 +68,7 @@ Set up per the [official Docker guide](https://www.librechat.ai/docs/local/docke
 <details><summary>Sync details</summary>
 
 - `bootstrap-user` inserts the LibreChat account `syncer` logs in with (`LIBRECHAT_EMAIL` / `LIBRECHAT_PASSWORD` in `.env`); registration is closed otherwise
+- `subagents:` in an agent's frontmatter is passed through as-is; `enabled: true` gives that agent LibreChat's `subagent` tool (Ai-kun has it)
 - Agents and skills are matched by name: created or updated, never duplicated. `id:` in an agent's frontmatter pins it to an existing agent instead, so it can be renamed; `avatar:` uploads that image file from the agent folder
 - Removing one from the repo doesn't delete it in LibreChat; to delete everything the repo doesn't define: `docker compose run --rm -e SYNC_PRUNE=1 syncer`
 - LibreChat silently drops MCP tools it can't verify; `sync.py` exits non-zero if an agent lost its memory tools — rerun once the memory server is up

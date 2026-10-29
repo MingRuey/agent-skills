@@ -9,4 +9,6 @@ model_parameters:
   thinking: true
 tools:
   - web_search
+subagents:
+  enabled: true
 ---

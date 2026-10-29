@@ -772,6 +772,14 @@ webSearch:
 #     # format: markdown        # 'markdown' (default) or 'text' (plain text, may increase latency)
 #     # timeout: 15000          # HTTP request timeout in milliseconds (max 120000); Tavily Extract receives seconds clamped to 1-60
 
+# Summarize older turns when a conversation nears the context window, so long runs keep going.
+# No provider/model: each agent summarizes with its own model.
+summarization:
+  enabled: true
+  retainRecent:
+    turns: 2 # Keep the newest complete user/assistant turns outside the summary
+    tokens: 2000 # Also preserve up to this many recent tokens
+
 # Memory configuration for user memories
 # memory:
 #   # (optional) Disable memory functionality
