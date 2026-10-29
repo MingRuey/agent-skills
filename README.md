@@ -5,7 +5,7 @@ Ray's personal agent setup: LibreChat (company Anthropic key), Claude Code (Mac 
 ```
 agents/AGENT.md     shared rules (memory) → Claude Code CLAUDE.md, every LibreChat agent, claude.ai profile
 agents/<name>/      LibreChat agents (currently: ai-kun)
-skills/<name>/      shared skills (guided-tutoring, karpathy-guidelines)
+skills/<name>/      shared skills (guided-tutoring, karpathy-guidelines, orchestration)
 bin/sync.py         pushes agents + skills into LibreChat
 bin/pack-claude-ai.py  builds the claude.ai download page (per-skill zips + agent .md files)
 LibreChat/          upstream LibreChat + our docker-compose.override.yml, librechat.yaml, .env
@@ -60,7 +60,7 @@ Set up per the [official Docker guide](https://www.librechat.ai/docs/local/docke
 ## Agents and skills
 
 - **Agent** = a different API key / model / toolset. One today: **Ai-kun** (`agents/ai-kun`: company key, Opus, web search). A personal one would need a personal Anthropic API key
-- **Skill** = a procedure loaded when relevant: `guided-tutoring`, `karpathy-guidelines` (verbatim from multica-ai/andrej-karpathy-skills, MIT)
+- **Skill** = a procedure loaded when relevant: `guided-tutoring`, `karpathy-guidelines` (verbatim from multica-ai/andrej-karpathy-skills, MIT), `orchestration` (Ray writes the goal and steps; the agent tracks them, delegates and checks results)
 - **Memory** = facts and preferences about Ray, never files
 
 `sync.py` (run by the `syncer` container) gives every agent: `agents/AGENT.md` + its own prompt, the 5 core memory tools, and every skill in `skills/`. Opt out per agent with `shared: false`.
