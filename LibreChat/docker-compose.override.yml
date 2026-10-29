@@ -41,6 +41,14 @@ services:
       - mcp-memory-models:/root/.cache
     restart: unless-stopped
 
+  # Unused (users come from bootstrap-user, config from git), so off by default:
+  # start it only with `docker compose --profile admin up -d`. Upstream publishes it
+  # on 0.0.0.0, which bypasses UFW; keep it host-local like api if it's ever enabled.
+  admin-panel:
+    profiles: ["admin"]
+    ports: !override
+      - "127.0.0.1:${ADMIN_PANEL_PORT:-3000}:3000"
+
   bootstrap-user:
     image: python:3.12-slim
     depends_on:
