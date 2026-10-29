@@ -19,6 +19,14 @@ LibreChat/          upstream LibreChat + our docker-compose.override.yml, librec
 
 **claude.ai bundle:** bookmark `http://localhost:2067/claude-ai/index.html` (from the Mac via the SSH tunnel; served by LibreChat, no login): one zip per skill in claude.ai's upload format (a single top-level `<skill>/` folder with `SKILL.md`; claude.ai takes one skill per zip), plus `agents.zip` and one link per agent `.md` (`AGENT.md` = shared rules, `ai-kun.md`, …) for pasting. The syncer rebuilds it on every run (`docker compose up syncer`); locally `bin/pack-claude-ai.py` writes `dist/claude-ai/`.
 
+## Set up a machine (Claude Code)
+
+```sh
+make     # same folder Claude Code uses: $CLAUDE_CONFIG_DIR if set (host: ~/.claude-personal), else ~/.claude (Mac)
+```
+
+Links `CLAUDE.md` → `agents/AGENT.md` and every skill (so `git pull` updates them), turns off built-in auto-memory, and registers the shared memory server. It needs the **memory API key** (`MCP_MEMORY_API_KEY`, not a Cloudflare key): read from `LibreChat/.env` on the host, asked for elsewhere. The host uses `127.0.0.1:2068`; other machines (e.g. the Mac on the company API key) use `https://memory.galaxynetwork.dev/mcp`, so the host must be up. `make check` tests the key; `make rules|skills|memory` run one step.
+
 ## Daily use
 
 ```sh
