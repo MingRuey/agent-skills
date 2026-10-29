@@ -80,11 +80,32 @@ check() {
 }
 
 memory() {
-  command -v claude >/dev/null || { say "claude CLI not found in PATH"; exit 1; }
   check
-  CLAUDE_CONFIG_DIR=$DIR claude mcp remove memory --scope user >/dev/null 2>&1 || true
-  CLAUDE_CONFIG_DIR=$DIR claude mcp add --scope user --transport http memory "$URL" \
-    --header "X-API-Key: $KEY" >/dev/null
+  if command -v claude >/dev/null; then
+    CLAUDE_CONFIG_DIR=$DIR claude mcp remove memory --scope user >/dev/null 2>&1 || true
+    CLAUDE_CONFIG_DIR=$DIR claude mcp add --scope user --transport http memory "$URL" \
+      --header "X-API-Key: $KEY" >/dev/null
+  else
+    # No CLI (e.g. Claude Code only runs inside Zed): write the same user-scope entry
+    # `claude mcp add` would, into the account file Claude Code reads.
+    local acct=${CLAUDE_CONFIG_DIR:+$DIR/.claude.json}
+    acct=${acct:-$HOME/.claude.json}
+    [ -f "$acct" ] && cp "$acct" "$acct.bak.$(date +%Y%m%d%H%M%S)"
+    URL=$URL KEY=$KEY python3 - "$acct" <<'PY'
+import json, os, sys
+p = sys.argv[1]
+d = json.load(open(p)) if os.path.exists(p) else {}
+d.setdefault("mcpServers", {})["memory"] = {
+    "type": "http", "url": os.environ["URL"], "headers": {"X-API-Key": os.environ["KEY"]}
+}
+tmp = p + ".tmp"
+with open(tmp, "w") as f:
+    json.dump(d, f, indent=2)
+os.chmod(tmp, 0o600)
+os.replace(tmp, p)
+PY
+    say "memory: no claude CLI, wrote the entry into $acct (backup kept)"
+  fi
   say "memory: registered $URL in $DIR (scope: user)"
 }
 
