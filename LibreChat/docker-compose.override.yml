@@ -36,9 +36,34 @@ services:
       - CLOUDFLARE_ACCOUNT_ID=${CLOUDFLARE_ACCOUNT_ID}
       - CLOUDFLARE_D1_DATABASE_ID=${CLOUDFLARE_D1_DATABASE_ID}
       - CLOUDFLARE_VECTORIZE_INDEX=${CLOUDFLARE_VECTORIZE_INDEX:-mcp-memory-index}
+      # OAuth for claude.ai (remote connector). X-API-Key keeps working for LibreChat and
+      # Claude Code. Approving a login requires typing MCP_MEMORY_API_KEY on /oauth/authorize.
+      - MCP_OAUTH_ENABLED=true
+      - MCP_OAUTH_STORAGE_BACKEND=sqlite
+      - MCP_OAUTH_SQLITE_PATH=/app/data/oauth.db
+      - MCP_OAUTH_ISSUER=${MEMORY_PUBLIC_URL:-http://127.0.0.1:2068}
+      # Persistent signing keys; without them tokens die on every restart.
+      - MCP_OAUTH_PRIVATE_KEY_PATH=/keys/private.pem
+      - MCP_OAUTH_PUBLIC_KEY_PATH=/keys/public.pem
+      # Per-client login rate limit behind the tunnel (else every request is "cloudflared")
+      - MCP_OAUTH_TRUST_PROXY_HEADER=CF-Connecting-IP
     volumes:
       - mcp-memory-data:/app/data
       - mcp-memory-models:/root/.cache
+      - ./secrets/mcp-memory-oauth:/keys:ro
+    restart: unless-stopped
+
+  # Public HTTPS for claude.ai via Cloudflare Tunnel: outbound-only, no host port.
+  # Off until COMPOSE_PROFILES=tunnel is set in .env (with CLOUDFLARE_TUNNEL_TOKEN).
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    profiles: ["tunnel"]
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - mcp-memory
     restart: unless-stopped
 
   # Unused (users come from bootstrap-user, config from git), so off by default:

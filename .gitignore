@@ -1,1 +1,3 @@
 LibreChat
+dist/
+__pycache__/
