@@ -7,6 +7,7 @@ agents/AGENT.md     shared rules (memory) → Claude Code CLAUDE.md, every Libre
 agents/<name>/      LibreChat agents (currently: ai-kun)
 skills/<name>/      shared skills (guided-tutoring, karpathy-guidelines)
 bin/sync.py         pushes agents + skills into LibreChat
+bin/pack-claude-ai.py  builds the claude.ai download page (per-skill zips + agent .md files)
 LibreChat/          upstream LibreChat + our docker-compose.override.yml, librechat.yaml, .env
 ```
 
@@ -15,6 +16,8 @@ LibreChat/          upstream LibreChat + our docker-compose.override.yml, librec
 | Claude Code | `claude mcp add` → `127.0.0.1:2068` | `~/.claude-personal/CLAUDE.md` → symlink to `agents/AGENT.md` | symlinks in `~/.claude-personal/skills/` |
 | LibreChat | added to every agent by `sync.py` | prepended to every agent by `sync.py` | attached to every agent by `sync.py` |
 | claude.ai | custom connector `https://memory.galaxynetwork.dev/mcp` | pasted into profile preferences | uploaded zips |
+
+**claude.ai bundle:** bookmark `http://localhost:2067/claude-ai/index.html` (from the Mac via the SSH tunnel; served by LibreChat, no login): one zip per skill in claude.ai's upload format (a single top-level `<skill>/` folder with `SKILL.md`; claude.ai takes one skill per zip), plus `agents.zip` and one link per agent `.md` (`AGENT.md` = shared rules, `ai-kun.md`, …) for pasting. The syncer rebuilds it on every run (`docker compose up syncer`); locally `bin/pack-claude-ai.py` writes `dist/claude-ai/`.
 
 ## Daily use
 
@@ -25,7 +28,7 @@ docker compose up syncer         # after editing agents/ or skills/
 docker compose logs -f <service> # api, mcp-memory, cloudflared, syncer
 ```
 
-- After editing `agents/AGENT.md` or a skill, also re-paste / re-upload it in claude.ai (it keeps its own copy). Zips: `mkdir -p dist && for d in skills/*/; do (cd skills && zip -qr ../dist/$(basename $d).zip $(basename $d)); done`
+- After editing `agents/AGENT.md` or a skill, also re-paste / re-upload it in claude.ai from the bundle (it keeps its own copy)
 - Never `docker compose down -v` — it deletes the local memory DB and LibreChat data
 - After a memory-server upgrade, give it a minute before `127.0.0.1:2068` answers
 
@@ -121,7 +124,7 @@ The memory server is published at `https://memory.galaxynetwork.dev` through a C
 3. Tunnel → Published application routes → `memory` · `<domain>` · URL `http://mcp-memory:8000`
 4. Check: `curl https://memory.<domain>/.well-known/oauth-authorization-server` shows that issuer; `curl -i https://memory.<domain>/api/memories` → 401
 5. claude.ai → Settings → Connectors → Add custom connector → `https://memory.<domain>/mcp`, log in with `MCP_MEMORY_API_KEY`
-6. Settings → Capabilities → Skills → upload `dist/*.zip`; Settings → Profile → paste `agents/AGENT.md`
+6. From the bundle page (`http://localhost:2067/claude-ai/index.html`): Settings → Capabilities → Skills → upload the skills; Settings → Profile → paste `agents/AGENT.md`
 7. Test: "What do you know about my computer setup?"
 
 OAuth signing keys live in `LibreChat/secrets/mcp-memory-oauth/` (gitignored); without them claude.ai is logged out on every restart.

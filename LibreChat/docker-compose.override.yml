@@ -9,6 +9,8 @@ services:
       - type: bind
         source: ./librechat.yaml
         target: /app/librechat.yaml
+      # claude.ai bundle built by syncer, served at /claude-ai/index.html (footer link)
+      - claude-ai-bundle:/app/client/public/assets/claude-ai:ro
 
   # Hybrid memory: local sqlite-vec for reads, background sync to Cloudflare (D1 + Vectorize).
   # LibreChat reaches it at http://mcp-memory:8000/mcp; host-side Claude Code at 127.0.0.1:2068.
@@ -104,9 +106,12 @@ services:
       - ../agents:/agents:ro
       - ../skills:/skills:ro
       - ../bin/sync.py:/sync.py:ro
-    command: ["sh", "-c", "pip install --quiet pyyaml && python /sync.py"]
+      - ../bin/pack-claude-ai.py:/pack-claude-ai.py:ro
+      - claude-ai-bundle:/bundle
+    command: ["sh", "-c", "pip install --quiet pyyaml && python /sync.py && python /pack-claude-ai.py /bundle"]
     restart: "no"
 
 volumes:
   mcp-memory-data:
   mcp-memory-models:
+  claude-ai-bundle:
