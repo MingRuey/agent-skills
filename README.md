@@ -99,7 +99,7 @@ Tag rules (in `agents/AGENT.md`): one scope tag — project name or `general` �
    ```
    (Don't `. ./.env` in a shell — some values glob-expand.)
 2. `.env`: `MCP_MEMORY_API_KEY` (`openssl rand -hex 32`), `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `CLOUDFLARE_D1_DATABASE_ID`, `CLOUDFLARE_VECTORIZE_INDEX=mcp-memory-index`
-3. LibreChat connects via `mcpServers.memory` in `librechat.yaml` (`http://mcp-memory:8000/mcp`, needs `mcpSettings.allowedAddresses: ['mcp-memory:8000']`)
+3. LibreChat connects via `mcpServers.memory` in `librechat.yaml` (`http://mcp-memory:8000/mcp`, needs `mcpSettings.allowedAddresses: ['mcp-memory:8000']`, and `requiresOAuth: false` — otherwise LibreChat sees the server's OAuth support and demands an OAuth login instead of sending the API key)
 4. Claude Code on the host:
    ```sh
    claude mcp add --scope user --transport http memory http://127.0.0.1:2068/mcp --header "X-API-Key: <MCP_MEMORY_API_KEY>"

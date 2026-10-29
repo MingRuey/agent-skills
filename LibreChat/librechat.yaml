@@ -317,6 +317,9 @@ mcpServers:
     url: http://mcp-memory:8000/mcp
     headers:
       X-API-Key: "${MCP_MEMORY_API_KEY}"
+    # The server also offers OAuth (for claude.ai); without this LibreChat auto-detects
+    # that and demands an OAuth login instead of sending the API key.
+    requiresOAuth: false
     timeout: 60000
 
 # Example MCP Servers Object Structure
