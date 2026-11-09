@@ -23,6 +23,9 @@ REPO = Path(__file__).resolve().parent.parent
 # itself, and not one of the reserved ones.
 TOPIC = "TOPIC"
 RESERVED = {"general", "preference", "agent-skills", "coding", "science", "writing", "language", "travel"}
+# Expected value for a preference in a kind of work with no listed type: `preference`
+# plus one work type the model names itself.
+NEW_WORK_TYPE = "NEW_WORK_TYPE"
 
 CASES = [
     # Cross-project facts get a topic tag the model names itself; the repo tag also fits here.
@@ -44,6 +47,7 @@ CASES = [
     # Project-specific preferences stay project-scoped: work-type tags are recalled in every project.
     ("For this repo, Ray wants every shared agent prompt kept under 200 words.", {"agent-skills"}),
     ("mcp-memory-service sync timing (2026-10-28): push ~5 s, pull hourly. Ray rejected a 5-minute pull as too frequent.", {"agent-skills"}),
+    ("When cooking, Ray wants recipes in grams and Celsius, never cups or Fahrenheit.", NEW_WORK_TYPE),
     ("Ray lives in Tokyo.", "ASK"),
 ]
 
@@ -76,6 +80,8 @@ def passes(got, expected) -> bool:
     tags = set(got or [])
     if expected == TOPIC:
         return len(tags) == 1 and not tags & RESERVED
+    if expected == NEW_WORK_TYPE:
+        return "preference" in tags and len(tags) == 2 and not tags & (RESERVED - {"preference"})
     return tags == expected
 
 

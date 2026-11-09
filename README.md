@@ -81,7 +81,7 @@ Set up per the [official Docker guide](https://www.librechat.ai/docs/local/docke
 
 [mcp-memory-service](https://github.com/doobidoo/mcp-memory-service), one per machine (Docker `mcp-memory` on the host, `uv` on the Mac), synced through Cloudflare (D1 + Vectorize + Workers AI, free tier). Reads are local; new memories reach Cloudflare in ~5 s, other machines pull hourly and on startup.
 
-Tag rules (in `agents/AGENT.md`): one scope tag — project name, or a topic tag (e.g. `home-network`, `tax`) for things beyond one project. `general` holds only index memories, one per topic tag, loaded at session start. Preferences that hold across projects get `preference` + one work type (`coding`, `science`, `writing`, `language`, `travel`) and no scope tag. Test after editing the rules: `CLAUDE_CONFIG_DIR=~/.claude-personal bin/test-memory-tags.py --runs 3`.
+Tag rules (in `agents/AGENT.md`): one scope tag — project name, or a topic tag (e.g. `home-network`, `tax`) for things beyond one project. `general` holds only index memories, one per topic tag or work type, loaded at session start. Preferences that hold across projects get `preference` + one work type (`coding`, `science`, `writing`, `language`, `travel`, or a new one the agent adds when none fits) and no scope tag. Test after editing the rules: `CLAUDE_CONFIG_DIR=~/.claude-personal bin/test-memory-tags.py --runs 3`.
 
 <details><summary>How it works</summary>
 
