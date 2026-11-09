@@ -19,19 +19,28 @@ from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 
+# Expected value for facts that need a topic tag: exactly one tag the model names
+# itself, and not one of the reserved ones.
+TOPIC = "TOPIC"
+RESERVED = {"general", "preference", "agent-skills", "coding", "science", "writing", "language", "travel"}
+
 CASES = [
-    ("Ray's Linux host runs LibreChat in Docker; the Mac connects to it over SSH.", {"general"}),
+    # Cross-project facts get a topic tag the model names itself; the repo tag also fits here.
+    ("Ray's Linux host runs LibreChat in Docker; the Mac connects to it over SSH.", [TOPIC, {"agent-skills"}]),
     # Ambiguous: a setup fact or a coding-tool preference -- either recalls sensibly.
-    ("Ray does not use Zed's native agent; only Claude Code and LibreChat.", [{"general"}, {"general", "preference", "coding"}]),
+    ("Ray does not use Zed's native agent; only Claude Code and LibreChat.", [TOPIC, {"agent-skills"}, {"preference", "coding"}]),
+    ("The GPU server gpgpu2 needs /etc/resolv.conf linked to the systemd stub to resolve names.", TOPIC),
+    # `general` is only for index memories pointing at a topic tag.
+    ("Index: Ray's Japanese tax facts (year-end adjustment, tax return, stocks) are tagged `tax`; search it when taxes come up.", {"general"}),
     ("2026-10-28: chose bge-m3 on Cloudflare for this repo's memory service because memories are often Japanese.", {"agent-skills"}),
     ("This repo's memory sync stays at the default hourly pull; Ray found 5 minutes too frequent.", {"agent-skills"}),
     ("LibreChat in this repo reaches the memory server at http://mcp-memory:8000/mcp.", {"agent-skills"}),
-    ("Ray prefers TypeScript over plain JavaScript for new code.", {"general", "preference", "coding"}),
-    ("Ray wants commit messages in the imperative mood.", {"general", "preference", "coding"}),
-    ("When learning physics, Ray wants step-by-step derivations with a running formula ledger.", {"general", "preference", "science"}),
-    ("Ray likes terse bullet-point docs with no marketing tone.", {"general", "preference", "writing"}),
-    ("Ray prefers window seats and avoids red-eye flights.", {"general", "preference", "travel"}),
-    ("When explaining Japanese, list kanji readings after the text, not inline.", {"general", "preference", "language"}),
+    ("Ray prefers TypeScript over plain JavaScript for new code.", {"preference", "coding"}),
+    ("Ray wants commit messages in the imperative mood.", {"preference", "coding"}),
+    ("When learning physics, Ray wants step-by-step derivations with a running formula ledger.", {"preference", "science"}),
+    ("Ray likes terse bullet-point docs with no marketing tone.", {"preference", "writing"}),
+    ("Ray prefers window seats and avoids red-eye flights.", {"preference", "travel"}),
+    ("When explaining Japanese, list kanji readings after the text, not inline.", {"preference", "language"}),
     # Project-specific preferences stay project-scoped: work-type tags are recalled in every project.
     ("For this repo, Ray wants every shared agent prompt kept under 200 words.", {"agent-skills"}),
     ("mcp-memory-service sync timing (2026-10-28): push ~5 s, pull hourly. Ray rejected a 5-minute pull as too frequent.", {"agent-skills"}),
@@ -60,8 +69,14 @@ def ask(model):
 
 
 def passes(got, expected) -> bool:
-    got_norm = "ASK" if got == "ASK" else set(got or [])
-    return got_norm in expected if isinstance(expected, list) else got_norm == expected
+    if isinstance(expected, list):
+        return any(passes(got, e) for e in expected)
+    if got == "ASK" or expected == "ASK":
+        return got == expected
+    tags = set(got or [])
+    if expected == TOPIC:
+        return len(tags) == 1 and not tags & RESERVED
+    return tags == expected
 
 
 def main() -> int:
